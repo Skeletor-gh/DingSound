@@ -1,0 +1,8 @@
+## Interface: 120000
+## Title: DingSound
+## Notes: Plays a configurable custom sound when you level up.
+## Author: Skeletor-gh
+## Version: 1.0.0
+## SavedVariables: DingSoundDB
+
+DingSound.lua
