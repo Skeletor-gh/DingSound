@@ -2,7 +2,8 @@
 ## Title: DingSound
 ## Notes: Plays a configurable custom sound when you level up.
 ## Author: Skeletor-gh
-## Version: 1.0.0
+## Version: 1.1.0
 ## SavedVariables: DingSoundDB
 
+DingSound_SoundList.lua
 DingSound.lua
