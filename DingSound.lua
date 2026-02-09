@@ -18,6 +18,13 @@ local DEFAULT_LEVEL_UP_SOUND_PATHS = {
     "Sound\\Spells\\PVPFlagTakenHordeMono.ogg", -- legacy variant used by some clients
 }
 
+-- WoW 12.0 exposes file-muting APIs on C_Sound. Keep a tiny compatibility
+-- wrapper so this addon always resolves the API from the game client itself.
+local SoundAPI = {
+    muteSoundFile = C_Sound and C_Sound.MuteSoundFile,
+    unmuteSoundFile = C_Sound and C_Sound.UnmuteSoundFile,
+}
+
 local function NormalizePath(fileName)
     if not fileName or fileName == "" then
         return nil
@@ -59,9 +66,13 @@ local function ApplyDefaultLevelUpMuteSetting()
 
     for _, soundPath in ipairs(DEFAULT_LEVEL_UP_SOUND_PATHS) do
         if shouldMute then
-            MuteSoundFile(soundPath)
+            if SoundAPI.muteSoundFile then
+                SoundAPI.muteSoundFile(soundPath)
+            end
         else
-            UnmuteSoundFile(soundPath)
+            if SoundAPI.unmuteSoundFile then
+                SoundAPI.unmuteSoundFile(soundPath)
+            end
         end
     end
 end
@@ -79,6 +90,10 @@ local function EnsureDefaults()
 
     if DingSoundDB.muteDefaultLevelUp == nil then
         DingSoundDB.muteDefaultLevelUp = DEFAULT_DB.muteDefaultLevelUp
+    end
+
+    if not SoundAPI.muteSoundFile or not SoundAPI.unmuteSoundFile then
+        DingSoundDB.muteDefaultLevelUp = false
     end
 
     ApplyDefaultLevelUpMuteSetting()
@@ -148,6 +163,10 @@ local function CreateSettingsPanel()
     muteDefaultCheck.text:SetPoint("LEFT", muteDefaultCheck, "RIGHT", 2, 0)
     muteDefaultCheck.text:SetText("Mute WoW default level-up sound")
     muteDefaultCheck:SetChecked(DingSoundDB.muteDefaultLevelUp)
+    if not SoundAPI.muteSoundFile or not SoundAPI.unmuteSoundFile then
+        muteDefaultCheck:Disable()
+        muteDefaultCheck.text:SetText("Mute WoW default level-up sound (not available on this client)")
+    end
     muteDefaultCheck:SetScript("OnClick", function(self)
         DingSoundDB.muteDefaultLevelUp = self:GetChecked() and true or false
         ApplyDefaultLevelUpMuteSetting()
