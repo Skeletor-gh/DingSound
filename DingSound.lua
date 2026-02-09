@@ -3,6 +3,7 @@ local ADDON_NAME = ...
 local DEFAULT_DB = {
     enabled = true,
     selectedSound = nil,
+    muteDefaultLevelUp = true,
 }
 
 -- Minimum time (seconds) between level-up sound plays.
@@ -10,11 +11,11 @@ local DEFAULT_DB = {
 local LEVEL_UP_SOUND_BUFFER_SECONDS = 2.0
 local nextPlayableTime = 0
 
--- WoW does not allow directory scans at runtime, so this table is the addon-maintained
--- catalog of files stored under: Interface/AddOns/DingSound/Sounds/
--- Add file names here (for example: "levelup.mp3", "horn.ogg").
-local SOUND_FILES = {
-    "FF7_victory.mp3"	-- Final Fantasy 7 Fanfare
+-- Common Blizzard level-up sounds. Muting these suppresses the default level-up ding
+-- while DingSound's custom audio plays.
+local DEFAULT_LEVEL_UP_SOUND_PATHS = {
+    "Sound\\Interface\\LevelUp2.ogg",
+    "Sound\\Spells\\PVPFlagTakenHordeMono.ogg", -- legacy variant used by some clients
 }
 
 local function NormalizePath(fileName)
@@ -32,7 +33,11 @@ end
 local function BuildSoundOptions()
     local options = {}
 
-    for _, fileName in ipairs(SOUND_FILES) do
+    if type(DingSoundSoundList) ~= "table" then
+        return options
+    end
+
+    for _, fileName in ipairs(DingSoundSoundList) do
         local path = NormalizePath(fileName)
         if path then
             options[#options + 1] = {
@@ -49,6 +54,18 @@ local function BuildSoundOptions()
     return options
 end
 
+local function ApplyDefaultLevelUpMuteSetting()
+    local shouldMute = DingSoundDB and DingSoundDB.muteDefaultLevelUp
+
+    for _, soundPath in ipairs(DEFAULT_LEVEL_UP_SOUND_PATHS) do
+        if shouldMute then
+            MuteSoundFile(soundPath)
+        else
+            UnmuteSoundFile(soundPath)
+        end
+    end
+end
+
 local function EnsureDefaults()
     DingSoundDB = DingSoundDB or {}
 
@@ -59,6 +76,12 @@ local function EnsureDefaults()
     if DingSoundDB.selectedSound == nil then
         DingSoundDB.selectedSound = DEFAULT_DB.selectedSound
     end
+
+    if DingSoundDB.muteDefaultLevelUp == nil then
+        DingSoundDB.muteDefaultLevelUp = DEFAULT_DB.muteDefaultLevelUp
+    end
+
+    ApplyDefaultLevelUpMuteSetting()
 end
 
 local function GetCurrentSelection(options)
@@ -119,8 +142,19 @@ local function CreateSettingsPanel()
         DingSoundDB.enabled = self:GetChecked() and true or false
     end)
 
+    local muteDefaultCheck = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
+    muteDefaultCheck:SetPoint("TOPLEFT", enabledCheck, "BOTTOMLEFT", 0, -8)
+    muteDefaultCheck.text = muteDefaultCheck:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    muteDefaultCheck.text:SetPoint("LEFT", muteDefaultCheck, "RIGHT", 2, 0)
+    muteDefaultCheck.text:SetText("Mute WoW default level-up sound")
+    muteDefaultCheck:SetChecked(DingSoundDB.muteDefaultLevelUp)
+    muteDefaultCheck:SetScript("OnClick", function(self)
+        DingSoundDB.muteDefaultLevelUp = self:GetChecked() and true or false
+        ApplyDefaultLevelUpMuteSetting()
+    end)
+
     local dropdownLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    dropdownLabel:SetPoint("TOPLEFT", enabledCheck, "BOTTOMLEFT", 2, -24)
+    dropdownLabel:SetPoint("TOPLEFT", muteDefaultCheck, "BOTTOMLEFT", 2, -24)
     dropdownLabel:SetText("Level-up sound")
 
     local dropdown = CreateFrame("Frame", "DingSoundSoundDropdown", panel, "UIDropDownMenuTemplate")
@@ -157,7 +191,7 @@ local function CreateSettingsPanel()
     end)
 
     if #soundOptions == 0 then
-        UIDropDownMenu_SetText(dropdown, "No sounds found in SOUND_FILES")
+        UIDropDownMenu_SetText(dropdown, "No sounds found in DingSound_SoundList.lua")
     else
         local selected = GetCurrentSelection(soundOptions)
         if selected then
@@ -176,7 +210,7 @@ local function CreateSettingsPanel()
     local helpText = panel:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
     helpText:SetPoint("TOPLEFT", dropdown, "BOTTOMLEFT", 16, -10)
     helpText:SetJustifyH("LEFT")
-    helpText:SetText("Put audio files in Interface/AddOns/DingSound/Sounds/ and list each filename in SOUND_FILES inside DingSound.lua.")
+    helpText:SetText("Put audio files in Interface/AddOns/DingSound/Sounds/ and list each filename in DingSound_SoundList.lua.")
 
     local category = Settings.RegisterCanvasLayoutCategory(panel, panel.name)
     Settings.RegisterAddOnCategory(category)
@@ -190,7 +224,7 @@ frame:SetScript("OnEvent", function(_, event, arg1)
     if event == "ADDON_LOADED" and arg1 == ADDON_NAME then
         EnsureDefaults()
         CreateSettingsPanel()
-		print("\124cFF9910E8 DingSound Loaded!")
+        print("\124cFF9910E8 DingSound Loaded!")
     elseif event == "PLAYER_LEVEL_UP" then
         PlayLevelUpSound()
     end
