@@ -1,4 +1,4 @@
-# DingSound (WoW Midnight)
+# DingSound
 
 DingSound plays a custom audio file whenever your character levels up.
 
