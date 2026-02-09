@@ -190,6 +190,7 @@ frame:SetScript("OnEvent", function(_, event, arg1)
     if event == "ADDON_LOADED" and arg1 == ADDON_NAME then
         EnsureDefaults()
         CreateSettingsPanel()
+		print("\124cFF9910E8 DingSound Loaded!")
     elseif event == "PLAYER_LEVEL_UP" then
         PlayLevelUpSound()
     end
