@@ -5,7 +5,7 @@ DingSound plays a custom audio file whenever your character levels up.
 - Listens for `PLAYER_LEVEL_UP`.
 - Plays the currently selected file (if enabled).
 - Uses a short playback buffer to avoid overlapping sounds when multiple level-ups happen quickly.
-- Optional setting to mute WoW's default level-up sound.
+- Optional setting to mute WoW's default level-up sound (uses WoW's built-in `C_Sound.MuteSoundFile` / `C_Sound.UnmuteSoundFile` APIs when available).
 - Adds an options panel in **Game Menu → Options → AddOns → DingSound**:
   - Enable/disable toggle.
   - Toggle for muting WoW's default level-up sound.
