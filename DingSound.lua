@@ -14,15 +14,7 @@ local nextPlayableTime = 0
 -- Common Blizzard level-up sounds. Muting these suppresses the default level-up ding
 -- while DingSound's custom audio plays.
 local DEFAULT_LEVEL_UP_SOUND_PATHS = {
-    "Sound\\Interface\\LevelUp2.ogg",
-    "Sound\\Spells\\PVPFlagTakenHordeMono.ogg", -- legacy variant used by some clients
-}
-
--- WoW 12.0 exposes file-muting APIs on C_Sound. Keep a tiny compatibility
--- wrapper so this addon always resolves the API from the game client itself.
-local SoundAPI = {
-    muteSoundFile = C_Sound and C_Sound.MuteSoundFile,
-    unmuteSoundFile = C_Sound and C_Sound.UnmuteSoundFile,
+    569593 -- Sound\\Interface\\LevelUp2.ogg,
 }
 
 local function NormalizePath(fileName)
@@ -66,13 +58,9 @@ local function ApplyDefaultLevelUpMuteSetting()
 
     for _, soundPath in ipairs(DEFAULT_LEVEL_UP_SOUND_PATHS) do
         if shouldMute then
-            if SoundAPI.muteSoundFile then
-                SoundAPI.muteSoundFile(soundPath)
-            end
+            MuteSoundFile(soundPath)
         else
-            if SoundAPI.unmuteSoundFile then
-                SoundAPI.unmuteSoundFile(soundPath)
-            end
+            UnmuteSoundFile(soundPath)
         end
     end
 end
