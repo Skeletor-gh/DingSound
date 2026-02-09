@@ -80,10 +80,6 @@ local function EnsureDefaults()
         DingSoundDB.muteDefaultLevelUp = DEFAULT_DB.muteDefaultLevelUp
     end
 
-    if not SoundAPI.muteSoundFile or not SoundAPI.unmuteSoundFile then
-        DingSoundDB.muteDefaultLevelUp = false
-    end
-
     ApplyDefaultLevelUpMuteSetting()
 end
 
