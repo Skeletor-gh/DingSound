@@ -151,7 +151,7 @@ local function CreateSettingsPanel()
     muteDefaultCheck.text:SetPoint("LEFT", muteDefaultCheck, "RIGHT", 2, 0)
     muteDefaultCheck.text:SetText("Mute WoW default level-up sound")
     muteDefaultCheck:SetChecked(DingSoundDB.muteDefaultLevelUp)
-    if not SoundAPI.muteSoundFile or not SoundAPI.unmuteSoundFile then
+    if false then
         muteDefaultCheck:Disable()
         muteDefaultCheck.text:SetText("Mute WoW default level-up sound (not available on this client)")
     end
