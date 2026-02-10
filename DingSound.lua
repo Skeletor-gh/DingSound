@@ -166,6 +166,29 @@ local function CreateSettingsPanel()
     local soundOptions = BuildSoundOptions()
 
     UIDropDownMenu_SetWidth(dropdown, 250)
+
+    local previewButton = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+    previewButton:SetPoint("TOPLEFT", dropdown, "BOTTOMLEFT", 16, -10)
+    previewButton:SetSize(120, 22)
+    previewButton:SetText("Play selected")
+    previewButton:SetScript("OnClick", function()
+        local selectedPath = DingSoundDB.selectedSound
+        if not selectedPath then
+            print("No sound selected")
+            return
+        end
+
+        PlaySoundFile(selectedPath, "Master")
+    end)
+
+    local function UpdatePreviewButtonState()
+        if DingSoundDB.selectedSound then
+            previewButton:Enable()
+        else
+            previewButton:Disable()
+        end
+    end
+
     UIDropDownMenu_Initialize(dropdown, function(self, level)
         local info = UIDropDownMenu_CreateInfo()
 
@@ -176,6 +199,7 @@ local function CreateSettingsPanel()
             DingSoundDB.selectedSound = nil
             UIDropDownMenu_SetSelectedValue(dropdown, nil)
             UIDropDownMenu_SetText(dropdown, "None")
+            UpdatePreviewButtonState()
         end
         UIDropDownMenu_AddButton(info, level)
 
@@ -188,6 +212,7 @@ local function CreateSettingsPanel()
                 DingSoundDB.selectedSound = option.value
                 UIDropDownMenu_SetSelectedValue(dropdown, option.value)
                 UIDropDownMenu_SetText(dropdown, option.text)
+                UpdatePreviewButtonState()
             end
             UIDropDownMenu_AddButton(item, level)
         end
@@ -210,8 +235,10 @@ local function CreateSettingsPanel()
         end
     end
 
+    UpdatePreviewButtonState()
+
     local helpText = panel:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
-    helpText:SetPoint("TOPLEFT", dropdown, "BOTTOMLEFT", 16, -10)
+    helpText:SetPoint("TOPLEFT", previewButton, "BOTTOMLEFT", 0, -10)
     helpText:SetJustifyH("LEFT")
     helpText:SetText("Put audio files in Interface/AddOns/DingSound/Sounds/ and list each filename in DingSound_SoundList.lua.")
 
