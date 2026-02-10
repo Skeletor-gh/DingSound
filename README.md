@@ -10,6 +10,7 @@ DingSound plays a custom audio file whenever your character levels up.
   - Enable/disable toggle.
   - Toggle for muting WoW's default level-up sound.
   - Sound picker dropdown.
+  - Allows to preview the chosen soundfile. 
 
 ### Adding your own sounds
 1. Put your files in:
