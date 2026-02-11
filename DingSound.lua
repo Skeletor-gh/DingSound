@@ -276,6 +276,7 @@ local frame = CreateFrame("Frame")
 frame:RegisterEvent("ADDON_LOADED")
 frame:RegisterEvent("PLAYER_LEVEL_UP")
 frame:RegisterEvent("PET_BATTLE_OPENING_START")
+frame:RegisterEvent("PET_BATTLE_OVER")
 frame:RegisterEvent("PET_BATTLE_CLOSE")
 
 frame:SetScript("OnEvent", function(_, event, arg1)
@@ -287,7 +288,7 @@ frame:SetScript("OnEvent", function(_, event, arg1)
         PlayLevelUpSound()
     elseif event == "PET_BATTLE_OPENING_START" then
         SetPetBattleMuteOverride(true)
-    elseif event == "PET_BATTLE_CLOSE" then
+    elseif event == "PET_BATTLE_OVER" or event == "PET_BATTLE_CLOSE" then
         SetPetBattleMuteOverride(false)
     end
 end)
