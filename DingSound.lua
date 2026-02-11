@@ -10,6 +10,7 @@ local DEFAULT_DB = {
 -- This prevents overlapping sounds when multiple level-up events fire quickly.
 local LEVEL_UP_SOUND_BUFFER_SECONDS = 2.0
 local nextPlayableTime = 0
+local isPetBattleMuteOverrideActive = false
 
 -- Common Blizzard level-up sounds. Muting these suppresses the default level-up ding
 -- while DingSound's custom audio plays.
@@ -53,8 +54,10 @@ local function BuildSoundOptions()
     return options
 end
 
-local function ApplyDefaultLevelUpMuteSetting()
-    local shouldMute = DingSoundDB and DingSoundDB.muteDefaultLevelUp
+local function SetDefaultLevelUpMuted(shouldMute)
+    if shouldMute == nil then
+        return
+    end
 
     for _, soundPath in ipairs(DEFAULT_LEVEL_UP_SOUND_PATHS) do
         if shouldMute then
@@ -62,6 +65,29 @@ local function ApplyDefaultLevelUpMuteSetting()
         else
             UnmuteSoundFile(soundPath)
         end
+    end
+end
+
+local function ApplyDefaultLevelUpMuteSetting()
+    local shouldMute = DingSoundDB and DingSoundDB.muteDefaultLevelUp
+    if isPetBattleMuteOverrideActive then
+        shouldMute = false
+    end
+
+    SetDefaultLevelUpMuted(shouldMute)
+end
+
+local function SetPetBattleMuteOverride(active)
+    if not DingSoundDB then
+        return
+    end
+
+    if active and DingSoundDB.muteDefaultLevelUp then
+        isPetBattleMuteOverrideActive = true
+        ApplyDefaultLevelUpMuteSetting()
+    elseif not active then
+        isPetBattleMuteOverrideActive = false
+        ApplyDefaultLevelUpMuteSetting()
     end
 end
 
@@ -249,6 +275,8 @@ end
 local frame = CreateFrame("Frame")
 frame:RegisterEvent("ADDON_LOADED")
 frame:RegisterEvent("PLAYER_LEVEL_UP")
+frame:RegisterEvent("PET_BATTLE_OPENING_START")
+frame:RegisterEvent("PET_BATTLE_CLOSE")
 
 frame:SetScript("OnEvent", function(_, event, arg1)
     if event == "ADDON_LOADED" and arg1 == ADDON_NAME then
@@ -257,5 +285,9 @@ frame:SetScript("OnEvent", function(_, event, arg1)
         print("\124cFF9910E8 DingSound Loaded!")
     elseif event == "PLAYER_LEVEL_UP" then
         PlayLevelUpSound()
+    elseif event == "PET_BATTLE_OPENING_START" then
+        SetPetBattleMuteOverride(true)
+    elseif event == "PET_BATTLE_CLOSE" then
+        SetPetBattleMuteOverride(false)
     end
 end)
