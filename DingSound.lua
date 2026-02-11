@@ -11,12 +11,102 @@ local DEFAULT_DB = {
 local LEVEL_UP_SOUND_BUFFER_SECONDS = 2.0
 local nextPlayableTime = 0
 local isPetBattleMuteOverrideActive = false
+local activeLevelUpSoundHandle = nil
+local activeVolumeRestoreTimer = nil
+local duckedVolumeSnapshot = nil
+
+local DUCKED_SOUND_CVARS = {
+    "Sound_AmbienceVolume",
+    "Sound_DialogVolume",
+    "Sound_MusicVolume",
+    "Sound_SFXVolume",
+}
 
 -- Common Blizzard level-up sounds. Muting these suppresses the default level-up ding
 -- while DingSound's custom audio plays.
 local DEFAULT_LEVEL_UP_SOUND_PATHS = {
     569593 -- Sound\\Interface\\LevelUp2.ogg,
 }
+
+local function ClampVolume(value)
+    if value < 0 then
+        return 0
+    end
+
+    if value > 1 then
+        return 1
+    end
+
+    return value
+end
+
+local function ClearVolumeRestoreTimer()
+    if activeVolumeRestoreTimer and activeVolumeRestoreTimer.Cancel then
+        activeVolumeRestoreTimer:Cancel()
+    end
+
+    activeVolumeRestoreTimer = nil
+end
+
+local function RestoreDuckedVolumes()
+    if not duckedVolumeSnapshot then
+        return
+    end
+
+    for cvarName, originalValue in pairs(duckedVolumeSnapshot) do
+        SetCVar(cvarName, tostring(originalValue))
+    end
+
+    duckedVolumeSnapshot = nil
+    activeLevelUpSoundHandle = nil
+    ClearVolumeRestoreTimer()
+end
+
+local function DuckNonMasterVolumes(percentage)
+    local multiplier = 1 - (percentage or 0)
+    duckedVolumeSnapshot = {}
+
+    for _, cvarName in ipairs(DUCKED_SOUND_CVARS) do
+        local currentValue = tonumber(GetCVar(cvarName))
+        if currentValue then
+            duckedVolumeSnapshot[cvarName] = currentValue
+
+            local reducedValue = ClampVolume(currentValue * multiplier)
+            SetCVar(cvarName, tostring(reducedValue))
+        end
+    end
+
+    if not next(duckedVolumeSnapshot) then
+        duckedVolumeSnapshot = nil
+    end
+end
+
+local function GetSoundDurationSeconds(soundPath)
+    if not C_Sound or not C_Sound.GetSoundFileDuration then
+        return nil
+    end
+
+    local duration = C_Sound.GetSoundFileDuration(soundPath)
+    if not duration or duration <= 0 then
+        return nil
+    end
+
+    -- Some clients report milliseconds and others may report seconds.
+    -- Treat large values as milliseconds.
+    if duration > 30 then
+        return duration / 1000
+    end
+
+    return duration
+end
+
+local function ScheduleVolumeRestore(delaySeconds)
+    ClearVolumeRestoreTimer()
+
+    activeVolumeRestoreTimer = C_Timer.NewTimer(delaySeconds, function()
+        RestoreDuckedVolumes()
+    end)
+end
 
 local function NormalizePath(fileName)
     if not fileName or fileName == "" then
@@ -139,9 +229,21 @@ local function PlayLevelUpSound()
         return
     end
 
-    local didPlay = PlaySoundFile(path, "Master")
+    if duckedVolumeSnapshot then
+        RestoreDuckedVolumes()
+    end
+
+    DuckNonMasterVolumes(0.10)
+
+    local didPlay, soundHandle = PlaySoundFile(path, "Master")
     if didPlay then
         nextPlayableTime = now + LEVEL_UP_SOUND_BUFFER_SECONDS
+        activeLevelUpSoundHandle = soundHandle
+
+        local durationSeconds = GetSoundDurationSeconds(path) or LEVEL_UP_SOUND_BUFFER_SECONDS
+        ScheduleVolumeRestore(durationSeconds)
+    else
+        RestoreDuckedVolumes()
     end
 end
 
@@ -278,6 +380,7 @@ frame:RegisterEvent("PLAYER_LEVEL_UP")
 frame:RegisterEvent("PET_BATTLE_OPENING_START")
 frame:RegisterEvent("PET_BATTLE_OVER")
 frame:RegisterEvent("PET_BATTLE_CLOSE")
+frame:RegisterEvent("SOUNDKIT_FINISHED")
 
 frame:SetScript("OnEvent", function(_, event, arg1)
     if event == "ADDON_LOADED" and arg1 == ADDON_NAME then
@@ -290,5 +393,7 @@ frame:SetScript("OnEvent", function(_, event, arg1)
         SetPetBattleMuteOverride(true)
     elseif event == "PET_BATTLE_OVER" or event == "PET_BATTLE_CLOSE" then
         SetPetBattleMuteOverride(false)
+    elseif event == "SOUNDKIT_FINISHED" and activeLevelUpSoundHandle and arg1 == activeLevelUpSoundHandle then
+        RestoreDuckedVolumes()
     end
 end)
