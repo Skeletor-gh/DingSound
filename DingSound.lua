@@ -1,9 +1,11 @@
 local ADDON_NAME = ...
+local ADDON_VERSION = GetAddOnMetadata(ADDON_NAME, "Version") or "dev"
 
 local DEFAULT_DB = {
     enabled = true,
     selectedSound = nil,
     muteDefaultLevelUp = true,
+    duckoutDuration = 1.5,
 }
 
 -- Minimum time (seconds) between level-up sound plays.
@@ -196,6 +198,10 @@ local function EnsureDefaults()
         DingSoundDB.muteDefaultLevelUp = DEFAULT_DB.muteDefaultLevelUp
     end
 
+    if DingSoundDB.duckoutDuration == nil then
+        DingSoundDB.duckoutDuration = DEFAULT_DB.duckoutDuration
+    end
+
     ApplyDefaultLevelUpMuteSetting()
 end
 
@@ -229,19 +235,25 @@ local function PlayLevelUpSound()
         return
     end
 
+    local duckoutDuration = tonumber(DingSoundDB.duckoutDuration) or 0
+
     if duckedVolumeSnapshot then
         RestoreDuckedVolumes()
     end
 
-    DuckNonMasterVolumes(0.10)
+    if duckoutDuration > 0 then
+        DuckNonMasterVolumes(0.10)
+    end
 
     local didPlay, soundHandle = PlaySoundFile(path, "Master")
     if didPlay then
         nextPlayableTime = now + LEVEL_UP_SOUND_BUFFER_SECONDS
         activeLevelUpSoundHandle = soundHandle
 
-        local durationSeconds = GetSoundDurationSeconds(path) or LEVEL_UP_SOUND_BUFFER_SECONDS
-        ScheduleVolumeRestore(durationSeconds)
+        if duckoutDuration > 0 then
+            local durationSeconds = math.min(duckoutDuration, GetSoundDurationSeconds(path) or duckoutDuration)
+            ScheduleVolumeRestore(durationSeconds)
+        end
     else
         RestoreDuckedVolumes()
     end
@@ -254,6 +266,10 @@ local function CreateSettingsPanel()
     local title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
     title:SetPoint("TOPLEFT", 16, -16)
     title:SetText("DingSound")
+
+    local versionText = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    versionText:SetPoint("LEFT", title, "RIGHT", 8, -1)
+    versionText:SetText(string.format("v%s", ADDON_VERSION))
 
     local subtitle = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
@@ -366,9 +382,44 @@ local function CreateSettingsPanel()
     UpdatePreviewButtonState()
 
     local helpText = panel:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
-    helpText:SetPoint("TOPLEFT", previewButton, "BOTTOMLEFT", 0, -10)
+    helpText:SetPoint("TOPLEFT", previewButton, "BOTTOMLEFT", 0, -58)
     helpText:SetJustifyH("LEFT")
     helpText:SetText("Put audio files in Interface/AddOns/DingSound/Sounds/ and list each filename in DingSound_SoundList.lua.")
+
+    local duckSlider = CreateFrame("Slider", "DingSoundDuckoutDurationSlider", panel, "OptionsSliderTemplate")
+    duckSlider:SetPoint("TOPLEFT", previewButton, "BOTTOMLEFT", 4, -18)
+    duckSlider:SetMinMaxValues(0, 3)
+    duckSlider:SetValueStep(0.5)
+    duckSlider:SetObeyStepOnDrag(true)
+    duckSlider:SetWidth(230)
+
+    _G[duckSlider:GetName() .. "Low"]:SetText("0s (disabled)")
+    _G[duckSlider:GetName() .. "High"]:SetText("3s")
+    _G[duckSlider:GetName() .. "Text"]:SetText("Duckout duration")
+
+    local function FormatDuckoutLabel(value)
+        if value <= 0 then
+            return "Duckout duration: Disabled"
+        end
+
+        return string.format("Duckout duration: %.1fs", value)
+    end
+
+    local function SetDuckoutDuration(value)
+        local normalized = math.max(0, math.min(3, math.floor((value * 2) + 0.5) / 2))
+        DingSoundDB.duckoutDuration = normalized
+        if math.abs((duckSlider:GetValue() or 0) - normalized) > 0.001 then
+            duckSlider:SetValue(normalized)
+            return
+        end
+        _G[duckSlider:GetName() .. "Text"]:SetText(FormatDuckoutLabel(normalized))
+    end
+
+    duckSlider:SetScript("OnValueChanged", function(self, value)
+        SetDuckoutDuration(value)
+    end)
+
+    SetDuckoutDuration(tonumber(DingSoundDB.duckoutDuration) or DEFAULT_DB.duckoutDuration)
 
     local category = Settings.RegisterCanvasLayoutCategory(panel, panel.name)
     Settings.RegisterAddOnCategory(category)
@@ -386,7 +437,7 @@ frame:SetScript("OnEvent", function(_, event, arg1)
     if event == "ADDON_LOADED" and arg1 == ADDON_NAME then
         EnsureDefaults()
         CreateSettingsPanel()
-        print("\124cFF9910E8 DingSound Loaded!")
+        print(string.format("\124cFF9910E8 DingSound v%s Loaded!", ADDON_VERSION))
     elseif event == "PLAYER_LEVEL_UP" then
         PlayLevelUpSound()
     elseif event == "PET_BATTLE_OPENING_START" then
