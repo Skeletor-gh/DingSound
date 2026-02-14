@@ -1,5 +1,18 @@
 local ADDON_NAME = ...
-local ADDON_VERSION = GetAddOnMetadata(ADDON_NAME, "Version") or "dev"
+
+local function GetAddonMetadataCompat(addonName, field)
+    if C_AddOns and C_AddOns.GetAddOnMetadata then
+        return C_AddOns.GetAddOnMetadata(addonName, field)
+    end
+
+    if GetAddOnMetadata then
+        return GetAddOnMetadata(addonName, field)
+    end
+
+    return nil
+end
+
+local ADDON_VERSION = GetAddonMetadataCompat(ADDON_NAME, "Version") or "dev"
 
 local DEFAULT_DB = {
     enabled = true,
