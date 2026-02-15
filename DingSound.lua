@@ -24,9 +24,10 @@ local DEFAULT_DB = {
 -- Minimum time (seconds) between level-up sound plays.
 -- This prevents overlapping sounds when multiple level-up events fire quickly.
 local LEVEL_UP_SOUND_BUFFER_SECONDS = 2.0
+local DUCKOUT_REDUCTION_PERCENTAGE = 0.30
+local DUCKOUT_MINIMUM_VOLUME = 0.05
 local nextPlayableTime = 0
 local isPetBattleMuteOverrideActive = false
-local activeLevelUpSoundHandle = nil
 local activeVolumeRestoreTimer = nil
 local duckedVolumeSnapshot = nil
 
@@ -73,7 +74,6 @@ local function RestoreDuckedVolumes()
     end
 
     duckedVolumeSnapshot = nil
-    activeLevelUpSoundHandle = nil
     ClearVolumeRestoreTimer()
 end
 
@@ -87,6 +87,9 @@ local function DuckNonMasterVolumes(percentage)
             duckedVolumeSnapshot[cvarName] = currentValue
 
             local reducedValue = ClampVolume(currentValue * multiplier)
+            if reducedValue <= 0 then
+                reducedValue = DUCKOUT_MINIMUM_VOLUME
+            end
             SetCVar(cvarName, tostring(reducedValue))
         end
     end
@@ -94,25 +97,6 @@ local function DuckNonMasterVolumes(percentage)
     if not next(duckedVolumeSnapshot) then
         duckedVolumeSnapshot = nil
     end
-end
-
-local function GetSoundDurationSeconds(soundPath)
-    if not C_Sound or not C_Sound.GetSoundFileDuration then
-        return nil
-    end
-
-    local duration = C_Sound.GetSoundFileDuration(soundPath)
-    if not duration or duration <= 0 then
-        return nil
-    end
-
-    -- Some clients report milliseconds and others may report seconds.
-    -- Treat large values as milliseconds.
-    if duration > 30 then
-        return duration / 1000
-    end
-
-    return duration
 end
 
 local function ScheduleVolumeRestore(delaySeconds)
@@ -255,17 +239,14 @@ local function PlayLevelUpSound()
     end
 
     if duckoutDuration > 0 then
-        DuckNonMasterVolumes(0.10)
+        DuckNonMasterVolumes(DUCKOUT_REDUCTION_PERCENTAGE)
     end
 
-    local didPlay, soundHandle = PlaySoundFile(path, "Master")
+    local didPlay = PlaySoundFile(path, "Master")
     if didPlay then
         nextPlayableTime = now + LEVEL_UP_SOUND_BUFFER_SECONDS
-        activeLevelUpSoundHandle = soundHandle
-
         if duckoutDuration > 0 then
-            local durationSeconds = math.min(duckoutDuration, GetSoundDurationSeconds(path) or duckoutDuration)
-            ScheduleVolumeRestore(durationSeconds)
+            ScheduleVolumeRestore(duckoutDuration)
         end
     else
         RestoreDuckedVolumes()
@@ -444,7 +425,6 @@ frame:RegisterEvent("PLAYER_LEVEL_UP")
 frame:RegisterEvent("PET_BATTLE_OPENING_START")
 frame:RegisterEvent("PET_BATTLE_OVER")
 frame:RegisterEvent("PET_BATTLE_CLOSE")
-frame:RegisterEvent("SOUNDKIT_FINISHED")
 
 frame:SetScript("OnEvent", function(_, event, arg1)
     if event == "ADDON_LOADED" and arg1 == ADDON_NAME then
@@ -457,7 +437,5 @@ frame:SetScript("OnEvent", function(_, event, arg1)
         SetPetBattleMuteOverride(true)
     elseif event == "PET_BATTLE_OVER" or event == "PET_BATTLE_CLOSE" then
         SetPetBattleMuteOverride(false)
-    elseif event == "SOUNDKIT_FINISHED" and activeLevelUpSoundHandle and arg1 == activeLevelUpSoundHandle then
-        RestoreDuckedVolumes()
     end
 end)
