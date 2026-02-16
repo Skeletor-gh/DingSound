@@ -7,4 +7,5 @@
 ## IconTexture: Interface\AddOns\DingSound\icon
 
 DingSound_SoundList.lua
+Options.lua
 DingSound.lua
