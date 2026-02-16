@@ -66,6 +66,7 @@ local DEFAULT_ACHIEVEMENT_SOUNDKIT_KEYS = {
 }
 
 local achievementSoundKitIdSet = {}
+local shouldSuppressAchievementSoundKit = false
 
 local function ClampVolume(value)
     if value < 0 then
@@ -216,12 +217,7 @@ local function InstallPlaySoundWrapper()
 
     originalPlaySound = PlaySound
     PlaySound = function(soundKitID, channel, forceNoDuplicates, runFinishCallback)
-        if DingSoundDB
-            and DingSoundDB.achievement
-            and DingSoundDB.achievement.enabled
-            and type(soundKitID) == "number"
-            and achievementSoundKitIdSet[soundKitID]
-        then
+        if shouldSuppressAchievementSoundKit and type(soundKitID) == "number" and achievementSoundKitIdSet[soundKitID] then
             if type(runFinishCallback) == "function" then
                 runFinishCallback()
             end
@@ -245,7 +241,22 @@ end
 
 local function ApplyDefaultAchievementMuteSetting()
     local shouldMute = DingSoundDB and DingSoundDB.achievement and DingSoundDB.achievement.enabled
+    shouldSuppressAchievementSoundKit = shouldMute and true or false
     SetDefaultAchievementMuted(shouldMute)
+end
+
+function DingSound.PlayCheckboxClickSound(isChecked)
+    local soundKitId = nil
+    if type(SOUNDKIT) == "table" then
+        soundKitId = isChecked and SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON or SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_OFF
+    end
+
+    if soundKitId then
+        PlaySound(soundKitId, "SFX")
+        return
+    end
+
+    PlaySound(856, "SFX")
 end
 
 local function SetPetBattleMuteOverride(active)
