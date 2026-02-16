@@ -717,7 +717,7 @@ end
 local frame = CreateFrame("Frame")
 frame:RegisterEvent("ADDON_LOADED")
 frame:RegisterEvent("PLAYER_LEVEL_UP")
-frame:RegisterEvent("PLAYER_ACHIEVEMENT_EARNED")
+frame:RegisterEvent("ACHIEVEMENT_EARNED")
 frame:RegisterEvent("PET_BATTLE_OPENING_START")
 frame:RegisterEvent("PET_BATTLE_OVER")
 frame:RegisterEvent("PET_BATTLE_CLOSE")
@@ -731,7 +731,7 @@ frame:SetScript("OnEvent", function(_, event, arg1)
         print(string.format("\124cFF9910E8 DingSound v%s Loaded!", ADDON_VERSION))
     elseif event == "PLAYER_LEVEL_UP" then
         PlayLevelUpSound()
-    elseif event == "PLAYER_ACHIEVEMENT_EARNED" then
+    elseif event == "ACHIEVEMENT_EARNED" then
         PlayAchievementSound()
     elseif event == "PET_BATTLE_OPENING_START" then
         SetPetBattleMuteOverride(true)
