@@ -34,10 +34,11 @@ local DEFAULT_DB = {
 
 local LEVEL_UP_SOUND_BUFFER_SECONDS = 2.0
 local ACHIEVEMENT_SOUND_BUFFER_SECONDS = 2.0
-local DUCKOUT_REDUCTION_PERCENTAGE = 0.30
-local DUCKOUT_MINIMUM_VOLUME = 0.05
-local nextLevelUpPlayableTime = 0
-local nextAchievementPlayableTime = 0
+local DUCKOUT_TARGET_VOLUME = 0.05
+local nextPlayableTimes = {
+    levelUp = 0,
+    achievement = 0,
+}
 local isPetBattleMuteOverrideActive = false
 local activeVolumeRestoreTimer = nil
 local duckedVolumeSnapshot = nil
@@ -47,8 +48,17 @@ local originalPlaySound = nil
 local DUCKED_SOUND_CVARS = {
     "Sound_AmbienceVolume",
     "Sound_DialogVolume",
+    "Sound_MasterVolume",
     "Sound_MusicVolume",
     "Sound_SFXVolume",
+}
+
+local PLAYBACK_CHANNEL_TO_CVAR = {
+    Ambience = "Sound_AmbienceVolume",
+    Dialog = "Sound_DialogVolume",
+    Master = "Sound_MasterVolume",
+    Music = "Sound_MusicVolume",
+    SFX = "Sound_SFXVolume",
 }
 
 local DEFAULT_LEVEL_UP_SOUND_PATHS = {
@@ -101,20 +111,25 @@ local function RestoreDuckedVolumes()
     ClearVolumeRestoreTimer()
 end
 
-local function DuckNonMasterVolumes(percentage)
-    local multiplier = 1 - (percentage or 0)
+local function NormalizePlaybackChannel(channel)
+    if type(channel) ~= "string" or channel == "" then
+        return "Master"
+    end
+
+    return channel
+end
+
+local function DuckOtherChannels(playbackChannel)
+    local playbackCVar = PLAYBACK_CHANNEL_TO_CVAR[NormalizePlaybackChannel(playbackChannel)]
     duckedVolumeSnapshot = {}
 
     for _, cvarName in ipairs(DUCKED_SOUND_CVARS) do
-        local currentValue = tonumber(GetCVar(cvarName))
-        if currentValue then
-            duckedVolumeSnapshot[cvarName] = currentValue
-
-            local reducedValue = ClampVolume(currentValue * multiplier)
-            if reducedValue <= 0 then
-                reducedValue = DUCKOUT_MINIMUM_VOLUME
+        if cvarName ~= playbackCVar then
+            local currentValue = tonumber(GetCVar(cvarName))
+            if currentValue then
+                duckedVolumeSnapshot[cvarName] = currentValue
+                SetCVar(cvarName, tostring(ClampVolume(DUCKOUT_TARGET_VOLUME)))
             end
-            SetCVar(cvarName, tostring(reducedValue))
         end
     end
 
@@ -129,6 +144,18 @@ local function ScheduleVolumeRestore(delaySeconds)
     activeVolumeRestoreTimer = C_Timer.NewTimer(delaySeconds, function()
         RestoreDuckedVolumes()
     end)
+end
+
+function DingSound.AnnounceOptionChange(featureLabel, isEnabled)
+    local stateText = isEnabled and "enabled" or "disabled"
+    local message = string.format("|cFF9910E8DingSound|r: %s %s.", featureLabel, stateText)
+
+    if DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
+        DEFAULT_CHAT_FRAME:AddMessage(message)
+        return
+    end
+
+    print(message)
 end
 
 local function NormalizePath(fileName)
@@ -329,34 +356,44 @@ local function EnsureDefaults()
     ApplyDefaultAchievementMuteSetting()
 end
 
-local function PlayLevelUpSound()
-    if not DingSoundDB or not DingSoundDB.levelUp or not DingSoundDB.levelUp.enabled then
+local function PlayConfiguredSound(featureKey, bufferDurationSeconds, enforceEnabled, enforceBuffer)
+    if not DingSoundDB or not DingSoundDB[featureKey] then
         return
     end
 
-    local path = DingSoundDB.levelUp.selectedSound
+    local featureSettings = DingSoundDB[featureKey]
+
+    if enforceEnabled and not featureSettings.enabled then
+        return
+    end
+
+    local path = featureSettings.selectedSound
     if not path then
         return
     end
 
     local now = GetTime()
-    if now < nextLevelUpPlayableTime then
+    if enforceBuffer and now < (nextPlayableTimes[featureKey] or 0) then
         return
     end
 
-    local duckoutDuration = tonumber(DingSoundDB.levelUp.duckoutDuration) or 0
+    local duckoutDuration = tonumber(featureSettings.duckoutDuration) or 0
+    local playbackChannel = "Master"
 
     if duckedVolumeSnapshot then
         RestoreDuckedVolumes()
     end
 
     if duckoutDuration > 0 then
-        DuckNonMasterVolumes(DUCKOUT_REDUCTION_PERCENTAGE)
+        DuckOtherChannels(playbackChannel)
     end
 
-    local didPlay = PlaySoundFile(path, "Master")
+    local didPlay = PlaySoundFile(path, playbackChannel)
     if didPlay then
-        nextLevelUpPlayableTime = now + LEVEL_UP_SOUND_BUFFER_SECONDS
+        if enforceBuffer then
+            nextPlayableTimes[featureKey] = now + bufferDurationSeconds
+        end
+
         if duckoutDuration > 0 then
             ScheduleVolumeRestore(duckoutDuration)
         end
@@ -365,40 +402,12 @@ local function PlayLevelUpSound()
     end
 end
 
+local function PlayLevelUpSound()
+    PlayConfiguredSound("levelUp", LEVEL_UP_SOUND_BUFFER_SECONDS, true, true)
+end
+
 local function PlayAchievementSound()
-    if not DingSoundDB or not DingSoundDB.achievement or not DingSoundDB.achievement.enabled then
-        return
-    end
-
-    local path = DingSoundDB.achievement.selectedSound
-    if not path then
-        return
-    end
-
-    local now = GetTime()
-    if now < nextAchievementPlayableTime then
-        return
-    end
-
-    local duckoutDuration = tonumber(DingSoundDB.achievement.duckoutDuration) or 0
-
-    if duckedVolumeSnapshot then
-        RestoreDuckedVolumes()
-    end
-
-    if duckoutDuration > 0 then
-        DuckNonMasterVolumes(DUCKOUT_REDUCTION_PERCENTAGE)
-    end
-
-    local didPlay = PlaySoundFile(path, "Master")
-    if didPlay then
-        nextAchievementPlayableTime = now + ACHIEVEMENT_SOUND_BUFFER_SECONDS
-        if duckoutDuration > 0 then
-            ScheduleVolumeRestore(duckoutDuration)
-        end
-    else
-        RestoreDuckedVolumes()
-    end
+    PlayConfiguredSound("achievement", ACHIEVEMENT_SOUND_BUFFER_SECONDS, true, true)
 end
 
 function DingSound.GetAddonVersion()
@@ -419,6 +428,10 @@ end
 
 function DingSound.ApplyAchievementMute()
     ApplyDefaultAchievementMuteSetting()
+end
+
+function DingSound.PreviewFeatureSound(featureKey)
+    PlayConfiguredSound(featureKey, 0, false, false)
 end
 
 local frame = CreateFrame("Frame")

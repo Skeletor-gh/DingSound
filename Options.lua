@@ -79,6 +79,7 @@ local function CreateMainOptionsPanel(parentCategory)
         DingSoundDB.levelUp.enabled = isChecked
         DingSound.ApplyLevelUpMute()
         DingSound.PlayCheckboxClickSound(isChecked)
+        DingSound.AnnounceOptionChange("Level up sound", isChecked)
     end)
 
     local achievementEnabledCheck = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
@@ -92,6 +93,7 @@ local function CreateMainOptionsPanel(parentCategory)
         DingSoundDB.achievement.enabled = isChecked
         DingSound.ApplyAchievementMute()
         DingSound.PlayCheckboxClickSound(isChecked)
+        DingSound.AnnounceOptionChange("Achievement sound", isChecked)
     end)
 
     AddFooter(panel)
@@ -167,10 +169,7 @@ local function CreateMainSoundSection(panel, anchor, titleText, featureKey, slid
     end
 
     previewButton:SetScript("OnClick", function()
-        local selectedPath = DingSoundDB[featureKey].selectedSound
-        if selectedPath then
-            PlaySoundFile(selectedPath, "Master")
-        end
+        DingSound.PreviewFeatureSound(featureKey)
     end)
 
     InitializeSoundDropdown(
