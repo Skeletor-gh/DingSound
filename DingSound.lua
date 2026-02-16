@@ -34,7 +34,7 @@ local DEFAULT_DB = {
 
 local LEVEL_UP_SOUND_BUFFER_SECONDS = 2.0
 local ACHIEVEMENT_SOUND_BUFFER_SECONDS = 2.0
-local DUCKOUT_TARGET_VOLUME = 0.05
+local DUCKOUT_TARGET_VOLUME = 0.1
 local nextPlayableTimes = {
     levelUp = 0,
     achievement = 0,
@@ -126,7 +126,7 @@ local function DuckOtherChannels(playbackChannel)
     for _, cvarName in ipairs(DUCKED_SOUND_CVARS) do
         if cvarName ~= playbackCVar then
             local currentValue = tonumber(GetCVar(cvarName))
-            if currentValue then
+            if currentValue and currentValue > DUCKOUT_TARGET_VOLUME then
                 duckedVolumeSnapshot[cvarName] = currentValue
                 SetCVar(cvarName, tostring(ClampVolume(DUCKOUT_TARGET_VOLUME)))
             end
