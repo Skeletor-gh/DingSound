@@ -75,8 +75,10 @@ local function CreateMainOptionsPanel(parentCategory)
     levelEnabledCheck.text:SetText("Enable Level Up Sound")
     levelEnabledCheck:SetChecked(DingSoundDB.levelUp.enabled)
     levelEnabledCheck:SetScript("OnClick", function(self)
-        DingSoundDB.levelUp.enabled = self:GetChecked() and true or false
+        local isChecked = self:GetChecked() and true or false
+        DingSoundDB.levelUp.enabled = isChecked
         DingSound.ApplyLevelUpMute()
+        DingSound.PlayCheckboxClickSound(isChecked)
     end)
 
     local achievementEnabledCheck = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
@@ -86,8 +88,10 @@ local function CreateMainOptionsPanel(parentCategory)
     achievementEnabledCheck.text:SetText("Enable Achievement Sound")
     achievementEnabledCheck:SetChecked(DingSoundDB.achievement.enabled)
     achievementEnabledCheck:SetScript("OnClick", function(self)
-        DingSoundDB.achievement.enabled = self:GetChecked() and true or false
+        local isChecked = self:GetChecked() and true or false
+        DingSoundDB.achievement.enabled = isChecked
         DingSound.ApplyAchievementMute()
+        DingSound.PlayCheckboxClickSound(isChecked)
     end)
 
     AddFooter(panel)
