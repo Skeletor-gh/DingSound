@@ -1,16 +1,15 @@
 ## DingSound
-DingSound plays a custom audio file whenever your character levels up.
+DingSound plays custom audio files whenever your character levels up or earns an achievement.
 
 ### Features
-- Listens for `PLAYER_LEVEL_UP`.
-- Plays the currently selected file (if enabled).
-- Uses a short playback buffer to avoid overlapping sounds when multiple level-ups happen quickly.
-- Optional setting to mute WoW's default level-up sound (uses WoW's built-in `C_Sound.MuteSoundFile` / `C_Sound.UnmuteSoundFile` APIs when available).
+- Listens for `PLAYER_LEVEL_UP` and `PLAYER_ACHIEVEMENT_EARNED`.
+- Plays the currently selected file (if enabled) for each feature independently.
+- Uses a short playback buffer to avoid overlapping sounds when events happen quickly.
+- Optional settings to mute WoW's default level-up and achievement sounds.
 - Adds an options panel in **Game Menu → Options → AddOns → DingSound**:
-  - Enable/disable toggle.
-  - Toggle for muting WoW's default level-up sound.
-  - Sound picker dropdown.
-  - Allows to preview the chosen soundfile. 
+  - Separate sections for Level-Up and Achievement customization.
+  - Feature toggle, default-sound mute toggle, sound picker, preview button, and duckout duration for each section.
+  - Footer with addon version and author tag.
 
 ### Adding your own sounds
 1. Put your files in:
