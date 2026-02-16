@@ -42,8 +42,6 @@ local nextPlayableTimes = {
 local isPetBattleMuteOverrideActive = false
 local activeVolumeRestoreTimer = nil
 local duckedVolumeSnapshot = nil
-local isPlaySoundWrapped = false
-local originalPlaySound = nil
 
 local DUCKED_SOUND_CVARS = {
     "Sound_AmbienceVolume",
@@ -70,13 +68,6 @@ local DEFAULT_ACHIEVEMENT_SOUND_PATHS = {
     569143,
 }
 
-local DEFAULT_ACHIEVEMENT_SOUNDKIT_KEYS = {
-    "UI_ACHIEVEMENT_TOAST",
-    "UI_ACHIEVEMENT_MENU_OPEN",
-}
-
-local achievementSoundKitIdSet = {}
-local shouldSuppressAchievementSoundKit = false
 
 local function ClampVolume(value)
     if value < 0 then
@@ -222,41 +213,6 @@ local function SetDefaultAchievementMuted(shouldMute)
     end
 end
 
-local function InitializeAchievementSoundKitIds()
-    wipe(achievementSoundKitIdSet)
-
-    if type(SOUNDKIT) ~= "table" then
-        return
-    end
-
-    for _, soundKitKey in ipairs(DEFAULT_ACHIEVEMENT_SOUNDKIT_KEYS) do
-        local soundKitId = SOUNDKIT[soundKitKey]
-        if type(soundKitId) == "number" then
-            achievementSoundKitIdSet[soundKitId] = true
-        end
-    end
-end
-
-local function InstallPlaySoundWrapper()
-    if isPlaySoundWrapped or type(PlaySound) ~= "function" then
-        return
-    end
-
-    originalPlaySound = PlaySound
-    PlaySound = function(soundKitID, channel, forceNoDuplicates, runFinishCallback)
-        if shouldSuppressAchievementSoundKit and type(soundKitID) == "number" and achievementSoundKitIdSet[soundKitID] then
-            if type(runFinishCallback) == "function" then
-                runFinishCallback()
-            end
-            return true
-        end
-
-        return originalPlaySound(soundKitID, channel, forceNoDuplicates, runFinishCallback)
-    end
-
-    isPlaySoundWrapped = true
-end
-
 local function ApplyDefaultLevelUpMuteSetting()
     local shouldMute = DingSoundDB and DingSoundDB.levelUp and DingSoundDB.levelUp.enabled
     if isPetBattleMuteOverrideActive then
@@ -268,7 +224,6 @@ end
 
 local function ApplyDefaultAchievementMuteSetting()
     local shouldMute = DingSoundDB and DingSoundDB.achievement and DingSoundDB.achievement.enabled
-    shouldSuppressAchievementSoundKit = shouldMute and true or false
     SetDefaultAchievementMuted(shouldMute)
 end
 
@@ -444,8 +399,6 @@ frame:RegisterEvent("PET_BATTLE_CLOSE")
 
 frame:SetScript("OnEvent", function(_, event, arg1)
     if event == "ADDON_LOADED" and arg1 == ADDON_NAME then
-        InitializeAchievementSoundKitIds()
-        InstallPlaySoundWrapper()
         EnsureDefaults()
         if DingSound.CreateSettingsPanels then
             DingSound.CreateSettingsPanels()
