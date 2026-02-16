@@ -60,7 +60,8 @@ local DEFAULT_LEVEL_UP_SOUND_PATHS = {
 -- We suppress those via a PlaySound wrapper (for broad compatibility), and
 -- we also keep a file-ID mute list for clients where the sound is file-driven.
 local DEFAULT_ACHIEVEMENT_SOUND_PATHS = {
-    543587, -- Common achievement toast file ID (client-dependent).
+    543587,
+	569143
 }
 
 local DEFAULT_ACHIEVEMENT_SOUNDKIT_KEYS = {

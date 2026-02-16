@@ -1,8 +1,8 @@
 ## Interface: 120000
 ## Title: DingSound
-## Notes: Plays a configurable custom sound when you level up.
+## Notes: Plays a configurable custom sound when you level up or obtain an achievement.
 ## Author: Skeletor-gh
-## Version: 1.04r
+## Version: 1.05
 ## SavedVariables: DingSoundDB
 ## IconTexture: Interface\AddOns\DingSound\icon
 
