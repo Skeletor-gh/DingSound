@@ -5,6 +5,8 @@
 ## Version: 1.05
 ## SavedVariables: DingSoundDB
 ## IconTexture: Interface\AddOns\DingSound\icon
+## X-Category: Skeletor
+## Category: Skeletor
 
 DingSound_SoundList.lua
 Options.lua
