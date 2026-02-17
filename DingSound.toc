@@ -4,7 +4,7 @@
 ## Author: Skeletor-gh
 ## Version: 1.05
 ## SavedVariables: DingSoundDB
-## IconTexture: Interface\AddOns\DingSound\icon
+## IconTexture: Interface\AddOns\DingSound\Assets\icon
 ## X-Category: Skeletor
 ## Category: Skeletor
 

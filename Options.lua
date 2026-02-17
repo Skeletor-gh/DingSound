@@ -22,6 +22,11 @@ local function CreateInfoPanel()
     local panel = CreateFrame("Frame", nil, UIParent)
     panel.name = "DingSound"
 
+    local background = panel:CreateTexture(nil, "BACKGROUND")
+    background:SetAllPoints(panel)
+    background:SetTexture("Interface\\AddOns\\DingSound\\Assets\\dingsound")
+    background:SetAlpha(0.3)
+
     local title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
     title:SetPoint("TOPLEFT", 16, -16)
     title:SetText("DingSound")
