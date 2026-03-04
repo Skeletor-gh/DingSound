@@ -1,4 +1,4 @@
-## Interface: 120000
+## Interface: 120001
 ## Title: DingSound
 ## Notes: Plays a configurable custom sound when you level up or obtain an achievement.
 ## Author: Skeletor-gh
