@@ -1,11 +1,7 @@
 ## DingSound
 DingSound plays custom audio files whenever your character levels up or earns an achievement.
 
-**Compatibility:** World of Warcraft: **Forever** — client 1.60.1 (Interface `16001`).
-
-> This is the `forever` branch. The retail (Midnight, Interface `120105`) build lives on `main`.
->
-> Install into `World of Warcraft/_forever_/Interface/AddOns/DingSound/`.
+**Compatibility:** World of Warcraft: Midnight — updated for Patch 12.1.5 (Interface `120105`, October 2026).
 
 ### Features
 - Listens for `PLAYER_LEVEL_UP` and `ACHIEVEMENT_EARNED`.
@@ -20,11 +16,6 @@ DingSound plays custom audio files whenever your character levels up or earns an
 - Ducked channel volumes are always restored, including if you log out mid-playback.
 
 ### Changelog
-**1.06-forever (2026-10-29)**
-- Ported to WoW Forever: TOC now targets Interface `16001` (client 1.60.1).
-- Checked against the Forever client's Blizzard UI source (build 1.60.1.70532). Every API the addon uses is present there: the `Settings` canvas categories, the `WowStyle1DropdownTemplate` menu, `C_AddOns.GetAddOnMetadata`, `MuteSoundFile` / `PlaySoundFile`, the `PLAYER_LEVEL_UP`, `ACHIEVEMENT_EARNED` and `PET_BATTLE_*` events, and `C_Timer`.
-- Forever shows achievements as **Legacy Challenges**. They still fire `ACHIEVEMENT_EARNED`, so the achievement feature works as before. The option labels now say "Achievement / Legacy Challenge".
-
 **1.06 (2026-10-26)**
 - Updated for Patch 12.1.5 (Interface `120105`), keeping `120100` for 12.1.0 clients.
 - Sound pickers now use the modern Blizzard Menu dropdown (`WowStyle1DropdownTemplate`), with a fallback to the deprecated `UIDropDownMenu` API.
