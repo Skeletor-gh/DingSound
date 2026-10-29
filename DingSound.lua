@@ -396,6 +396,7 @@ frame:RegisterEvent("ACHIEVEMENT_EARNED")
 frame:RegisterEvent("PET_BATTLE_OPENING_START")
 frame:RegisterEvent("PET_BATTLE_OVER")
 frame:RegisterEvent("PET_BATTLE_CLOSE")
+frame:RegisterEvent("PLAYER_LOGOUT")
 
 frame:SetScript("OnEvent", function(_, event, arg1)
     if event == "ADDON_LOADED" and arg1 == ADDON_NAME then
@@ -412,5 +413,8 @@ frame:SetScript("OnEvent", function(_, event, arg1)
         SetPetBattleMuteOverride(true)
     elseif event == "PET_BATTLE_OVER" or event == "PET_BATTLE_CLOSE" then
         SetPetBattleMuteOverride(false)
+    elseif event == "PLAYER_LOGOUT" then
+        -- Volume CVars are saved on logout; never persist the ducked values.
+        RestoreDuckedVolumes()
     end
 end)

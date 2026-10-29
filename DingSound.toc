@@ -1,8 +1,8 @@
-## Interface: 120100
+## Interface: 120100, 120105
 ## Title: DingSound
 ## Notes: Plays a configurable custom sound when you level up or obtain an achievement.
 ## Author: Skeletor-gh
-## Version: 1.05
+## Version: 1.06
 ## SavedVariables: DingSoundDB
 ## IconTexture: Interface\AddOns\DingSound\Assets\icon
 ## X-Category: Skeletor

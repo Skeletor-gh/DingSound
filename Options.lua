@@ -106,7 +106,7 @@ local function CreateMainOptionsPanel(parentCategory)
     Settings.RegisterCanvasLayoutSubcategory(parentCategory, panel, panel.name, panel.name)
 end
 
-local function InitializeSoundDropdown(dropdown, currentValue, soundOptions, onSelect)
+local function InitializeLegacySoundDropdown(dropdown, currentValue, soundOptions, onSelect)
     UIDropDownMenu_SetWidth(dropdown, 250)
 
     UIDropDownMenu_Initialize(dropdown, function(self, level)
@@ -116,6 +116,8 @@ local function InitializeSoundDropdown(dropdown, currentValue, soundOptions, onS
         info.checked = currentValue() == nil
         info.func = function()
             onSelect(nil, "None")
+            UIDropDownMenu_SetSelectedValue(dropdown, nil)
+            UIDropDownMenu_SetText(dropdown, "None")
         end
         UIDropDownMenu_AddButton(info, level)
 
@@ -126,6 +128,8 @@ local function InitializeSoundDropdown(dropdown, currentValue, soundOptions, onS
             item.checked = currentValue() == option.value
             item.func = function()
                 onSelect(option.value, option.text)
+                UIDropDownMenu_SetSelectedValue(dropdown, option.value)
+                UIDropDownMenu_SetText(dropdown, option.text)
             end
             UIDropDownMenu_AddButton(item, level)
         end
@@ -150,6 +154,53 @@ local function InitializeSoundDropdown(dropdown, currentValue, soundOptions, onS
     UIDropDownMenu_SetText(dropdown, "None")
 end
 
+-- Uses the Blizzard_Menu dropdown system (11.0+, current in Midnight).
+-- Falls back to the deprecated UIDropDownMenu API if it is unavailable.
+local function CreateSoundDropdown(panel, anchor, currentValue, soundOptions, onSelect)
+    if MenuUtil and C_XMLUtil and C_XMLUtil.GetTemplateInfo and C_XMLUtil.GetTemplateInfo("WowStyle1DropdownTemplate") then
+        local dropdown = CreateFrame("DropdownButton", nil, panel, "WowStyle1DropdownTemplate")
+        dropdown:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -6)
+        dropdown:SetWidth(250)
+
+        if #soundOptions == 0 then
+            dropdown:SetDefaultText("No sounds found in DingSound_SoundList.lua")
+        else
+            dropdown:SetDefaultText("None")
+        end
+
+        local function isSelected(value)
+            return currentValue() == value
+        end
+
+        local function setSelected(value)
+            local label = "None"
+            for _, option in ipairs(soundOptions) do
+                if option.value == value then
+                    label = option.text
+                    break
+                end
+            end
+            onSelect(value, label)
+        end
+
+        dropdown:SetupMenu(function(_, rootDescription)
+            rootDescription:CreateRadio("None", isSelected, setSelected, nil)
+            for _, option in ipairs(soundOptions) do
+                rootDescription:CreateRadio(option.text, isSelected, setSelected, option.value)
+            end
+        end)
+
+        return dropdown, 0
+    end
+
+    local dropdown = CreateFrame("Frame", nil, panel, "UIDropDownMenuTemplate")
+    dropdown:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", -16, -6)
+    InitializeLegacySoundDropdown(dropdown, currentValue, soundOptions, onSelect)
+
+    -- UIDropDownMenuTemplate has built-in left padding; compensate for it.
+    return dropdown, 16
+end
+
 local function CreateMainSoundSection(panel, anchor, titleText, featureKey, sliderName)
     local sectionTitle = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     sectionTitle:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -24)
@@ -157,11 +208,7 @@ local function CreateMainSoundSection(panel, anchor, titleText, featureKey, slid
 
     local soundOptions = DingSound.GetSoundOptions()
 
-    local dropdown = CreateFrame("Frame", nil, panel, "UIDropDownMenuTemplate")
-    dropdown:SetPoint("TOPLEFT", sectionTitle, "BOTTOMLEFT", -16, -6)
-
     local previewButton = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
-    previewButton:SetPoint("TOPLEFT", dropdown, "BOTTOMLEFT", 16, -8)
     previewButton:SetSize(120, 22)
     previewButton:SetText("Play selected")
 
@@ -177,17 +224,17 @@ local function CreateMainSoundSection(panel, anchor, titleText, featureKey, slid
         DingSound.PreviewFeatureSound(featureKey)
     end)
 
-    InitializeSoundDropdown(
-        dropdown,
+    local dropdown, dropdownOffsetX = CreateSoundDropdown(
+        panel,
+        sectionTitle,
         function() return DingSoundDB[featureKey].selectedSound end,
         soundOptions,
-        function(value, label)
+        function(value)
             DingSoundDB[featureKey].selectedSound = value
-            UIDropDownMenu_SetSelectedValue(dropdown, value)
-            UIDropDownMenu_SetText(dropdown, label)
             updatePreviewState()
         end
     )
+    previewButton:SetPoint("TOPLEFT", dropdown, "BOTTOMLEFT", dropdownOffsetX, -8)
 
     updatePreviewState()
 
@@ -198,8 +245,15 @@ local function CreateMainSoundSection(panel, anchor, titleText, featureKey, slid
     slider:SetObeyStepOnDrag(true)
     slider:SetWidth(230)
 
-    _G[slider:GetName() .. "Low"]:SetText("0s (disabled)")
-    _G[slider:GetName() .. "High"]:SetText("3s")
+    local lowText = slider.Low or _G[sliderName .. "Low"]
+    local highText = slider.High or _G[sliderName .. "High"]
+    local valueText = slider.Text or _G[sliderName .. "Text"]
+    if lowText then
+        lowText:SetText("0s (disabled)")
+    end
+    if highText then
+        highText:SetText("3s")
+    end
 
     local labelPrefix = featureKey == "levelUp" and "Level-up duckout duration" or "Achievement duckout duration"
 
@@ -210,7 +264,9 @@ local function CreateMainSoundSection(panel, anchor, titleText, featureKey, slid
             slider:SetValue(normalized)
             return
         end
-        _G[slider:GetName() .. "Text"]:SetText(FormatDuckoutLabel(labelPrefix, normalized))
+        if valueText then
+            valueText:SetText(FormatDuckoutLabel(labelPrefix, normalized))
+        end
     end
 
     slider:SetScript("OnValueChanged", function(self, value)

@@ -1,6 +1,8 @@
 ## DingSound
 DingSound plays custom audio files whenever your character levels up or earns an achievement.
 
+**Compatibility:** World of Warcraft: Midnight — updated for Patch 12.1.5 (Interface `120105`, October 2026).
+
 ### Features
 - Listens for `PLAYER_LEVEL_UP` and `ACHIEVEMENT_EARNED`.
 - Plays the currently selected file (if enabled) for each feature independently.
@@ -11,6 +13,13 @@ DingSound plays custom audio files whenever your character levels up or earns an
   - **Main Options** subpanel for enabling/disabling level-up and achievement features.
   - **Custom Sounds** subpanel for sound pickers, preview buttons, and duckout sliders.
   - Footer with addon version and author tag on every panel.
+- Ducked channel volumes are always restored, including if you log out mid-playback.
+
+### Changelog
+**1.06 (2026-10-26)**
+- Updated for Patch 12.1.5 (Interface `120105`), keeping `120100` for 12.1.0 clients.
+- Sound pickers now use the modern Blizzard Menu dropdown (`WowStyle1DropdownTemplate`), with a fallback to the deprecated `UIDropDownMenu` API.
+- Fixed ducked volume CVars being saved permanently if you logged out while a sound was still playing.
 
 ### Adding your own sounds
 1. Put your files in:
