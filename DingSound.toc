@@ -1,8 +1,8 @@
-## Interface: 120100, 120105
+## Interface: 16001
 ## Title: DingSound
-## Notes: Plays a configurable custom sound when you level up or obtain an achievement.
+## Notes: Plays a configurable custom sound when you level up or complete a Legacy Challenge (achievement). WoW Forever edition.
 ## Author: Skeletor-gh
-## Version: 1.06
+## Version: 1.06-forever
 ## SavedVariables: DingSoundDB
 ## IconTexture: Interface\AddOns\DingSound\Assets\icon
 ## X-Category: Skeletor

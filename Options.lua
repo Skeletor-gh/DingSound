@@ -33,14 +33,14 @@ local function CreateInfoPanel()
 
     local subtitle = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
-    subtitle:SetText("DingSound plays custom audio files whenever your character levels up or earns an achievement.")
+    subtitle:SetText("DingSound plays custom audio files whenever your character levels up or completes a Legacy Challenge (achievement).")
 
     local features = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     features:SetPoint("TOPLEFT", subtitle, "BOTTOMLEFT", 0, -18)
     features:SetJustifyH("LEFT")
     features:SetText(
         "Features:\n"
-        .. "• PLAYER_LEVEL_UP and ACHIEVEMENT_EARNED support\n"
+        .. "• PLAYER_LEVEL_UP and ACHIEVEMENT_EARNED (Legacy Challenges) support\n"
         .. "• Independent sound selection for each feature\n"
         .. "• Playback buffers to prevent overlap\n"
         .. "• Built-in options for feature toggles and duckout controls"
@@ -91,7 +91,7 @@ local function CreateMainOptionsPanel(parentCategory)
     achievementEnabledCheck:SetPoint("TOPLEFT", levelEnabledCheck, "BOTTOMLEFT", 0, -12)
     achievementEnabledCheck.text = achievementEnabledCheck:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     achievementEnabledCheck.text:SetPoint("LEFT", achievementEnabledCheck, "RIGHT", 2, 0)
-    achievementEnabledCheck.text:SetText("Enable Achievement Sound")
+    achievementEnabledCheck.text:SetText("Enable Achievement / Legacy Challenge Sound")
     achievementEnabledCheck:SetChecked(DingSoundDB.achievement.enabled)
     achievementEnabledCheck:SetScript("OnClick", function(self)
         local isChecked = self:GetChecked() and true or false
@@ -154,7 +154,7 @@ local function InitializeLegacySoundDropdown(dropdown, currentValue, soundOption
     UIDropDownMenu_SetText(dropdown, "None")
 end
 
--- Uses the Blizzard_Menu dropdown system (11.0+, current in Midnight).
+-- Uses the Blizzard_Menu dropdown system (11.0+, also present in the WoW Forever 1.60.x client).
 -- Falls back to the deprecated UIDropDownMenu API if it is unavailable.
 local function CreateSoundDropdown(panel, anchor, currentValue, soundOptions, onSelect)
     if MenuUtil and C_XMLUtil and C_XMLUtil.GetTemplateInfo and C_XMLUtil.GetTemplateInfo("WowStyle1DropdownTemplate") then
@@ -292,7 +292,7 @@ local function CreateCustomSoundsPanel(parentCategory)
 
     local levelSlider = CreateMainSoundSection(panel, subtitle, "Level-up sound", "levelUp", "DingSoundLevelDuckoutDurationSlider")
 
-    local achievementSlider = CreateMainSoundSection(panel, levelSlider, "Achievement sound", "achievement", "DingSoundAchievementDuckoutDurationSlider")
+    local achievementSlider = CreateMainSoundSection(panel, levelSlider, "Achievement / Legacy Challenge sound", "achievement", "DingSoundAchievementDuckoutDurationSlider")
 
     local helpText = panel:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
     helpText:SetPoint("TOPLEFT", achievementSlider, "BOTTOMLEFT", -4, -22)
